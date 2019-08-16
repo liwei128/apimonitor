@@ -1,5 +1,5 @@
 # apimonitor
-API接口/页面监控，服务可用性实时邮件报警提醒
+API接口/页面健康状态监控，服务可用性实时邮件提醒
 ## 效果演示
 1.主页效果
 [![apimonitor](https://raw.githubusercontent.com/liwei128/apimonitor/master/img/home.png)](https://raw.githubusercontent.com/liwei128/apimonitor/master/img/home.png)
