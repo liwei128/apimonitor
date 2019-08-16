@@ -1,0 +1,150 @@
+<html>
+<head>
+<script>
+function showApiLog(id){
+	$("#table-api-log tbody").empty();
+	$.ajax({
+        url : "/apiLog" , //获取数据列 
+        type : 'GET',
+        data : {"id":id},
+        success : function(data) {
+        	var tbody = "";
+        	$.each(data,function(n,value) {
+        		var log = value.log ? value.log : "";
+        		var trs = "<tr>"
+            		+"<td>"+value.httpMethod+"</td>"
+            		+"<td>"+value.url+"</td>"
+            		+"<td>"+ (value.status == true ? "成功":"失败")+"</td>"
+            		+"<td>"+value.statusCode+"</td>"
+            		+"<td>"+value.costTime+"毫秒</td>"
+            		+"<td>"+log+"</td>"
+            		+"</tr>";
+              
+                  tbody += trs;
+                 });  
+        
+            $("#table-api-log tbody").append(tbody);
+           	$("#modal-default").modal();  
+             
+        }
+	});  
+}
+  $(function () {
+    $('#example1').DataTable({
+      'paging'      : true,
+      'lengthChange': true,
+      'searching'   : true,
+      'ordering'    : true,
+      'info'        : true,
+      'autoWidth'   : true
+    })
+  })
+</script>
+</head>
+<body>
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <h1>
+        监控日志
+        <small>API监控</small>
+      </h1>
+      <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> 主页</a></li>
+        <li><a href="/monitorList">API监控</a></li>
+        <li class="active">监控日志</li>
+      </ol>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+	  <div class="row">
+        <div class="col-xs-12">  
+          <div class="box">
+            <div class="box-header">
+              <h3 class="box-title" th:text="${sequenceName}+'-监控日志'"></h3>
+            </div>
+            <!-- /.box-header -->
+            <div class="box-body table-responsive">
+              <table id="example1" class="table table-bordered table-striped">
+                <thead>
+                <tr>
+                  <th>监控时间</th>
+                  <th>状态</th>
+                  <th>响应时间</th>
+                  <th>日志</th>
+                  <th>API详情</th>
+                </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="item:${sequencelogs}">
+                    <td th:text="${item.createTime}"></td>
+                    <td>
+                    <i th:if="${item.status} eq true" class="fa fa-circle text-green">正常</i>
+                    <i th:if="${item.status} eq false" class="fa fa-circle text-red">故障</i>
+                    </td>
+                    <td th:text="${item.costTime}+' 毫秒'"></td>
+                    <td th:text="${item.log}"></td>  
+                    <td><button th:onclick="'showApiLog('+${item.id}+');'" type="button" class="btn btn-default btn-sm"><i class="fa fa-ellipsis-h"></i></button></td>
+	
+                  </tr>
+                </tbody>
+                <tfoot>
+                </tfoot>
+              </table>
+            </div>
+            <!-- /.box-body -->
+              <div class="box-footer">
+                <a class="btn btn-default" href="/monitorList">返回</a>
+              </div>
+              <!-- /.box-footer -->
+          </div>
+          <!-- /.box -->
+		
+		</div>
+        <!-- /.col -->
+      </div>
+      <!-- /.row -->
+	  
+	  <div class="modal fade" id="modal-default">
+		  <div class="modal-dialog" style="width:900px">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+				  <span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title">API日志详情</h4>
+			  </div>
+			  <div class="modal-body">
+				<div class="box-body table-responsive">
+				  <table id="table-api-log" class="table table-bordered table-striped">
+					<thead>
+					<tr>
+					  <th>API类型</th>
+					  <th>API地址</th>
+					  <th>状态</th>
+					  <th>响应状态码</th>
+					  <th>响应时间</th>
+					  <th>日志</th>
+					</tr>
+					</thead>
+					<tbody>
+					</tbody>
+					<tfoot>
+					</tfoot>
+				  </table>
+				</div>
+			  </div>
+			</div>
+			<!-- /.modal-content -->
+		  </div>
+		  <!-- /.modal-dialog -->
+	  </div>
+	  <!-- /.modal -->
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+
+</body>
+</html>

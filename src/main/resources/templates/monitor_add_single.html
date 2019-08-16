@@ -1,0 +1,346 @@
+<html>
+<head>
+<script th:inline="javascript">
+$(function () {
+	
+
+	formGroupValidator();
+    $("#form-sequence").bootstrapValidator({
+        live: 'enabled',//验证时机，enabled是内容有变化就验证（默认），disabled和submitted是提交再验证
+        excluded: [':disabled', ':hidden', ':not(:visible)'],//排除无需验证的控件，比如被禁用的或者被隐藏的
+        //submitButtons: '#btn-submit-sequence',//指定提交按钮，如果验证失败则变成disabled，但我没试成功，反而加了这句话非submit按钮也会提交到action指定页面
+        message: '通用的验证失败消息',//好像从来没出现过
+        feedbackIcons: {//根据验证结果显示的各种图标
+            valid: 'glyphicon glyphicon-ok',
+            invalid: 'glyphicon glyphicon-remove',
+            validating: 'glyphicon glyphicon-refresh'
+        },
+        fields: {
+        	group: {validators: {notEmpty: {message: '所属系统不能为空'}}},
+        	name: {validators: {notEmpty: {message: '监控名称不能为空'}}},
+        	url: {validators: {notEmpty: {message: 'API地址不能为空'},regexp:{regexp:/^(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?/,message:'API地址必须使用 http://或https://开始'}}}
+        }
+    });
+	
+
+    $('#modal-default1').on('hidden.bs.modal', function () {		
+    	$("#systemName").val("");   
+		$("#form-group").data('bootstrapValidator').destroy();
+	    $('#form-group').data('bootstrapValidator', null);
+	    formGroupValidator();
+    });
+    	
+    $("#btn-submit-group").click(function () {//非submit按钮点击后进行验证，如果是submit则无需此句直接验证
+        $("#form-group").bootstrapValidator('validate');//提交验证
+        if ($("#form-group").data('bootstrapValidator').isValid()) {//获取验证结果，如果成功，执行下面代码
+        	 var params = $("#form-group").serialize();  
+        	 var systemName = $("#systemName").val();
+             $.ajax( {  
+                 type : "POST",  
+                 url : "/addGroup",  
+                 data : params,  
+                 success : function(msg) {
+                	 if(msg){
+                		 $('#modal-default1').modal('hide');
+                		 loadGroup(systemName);
+                	 }else{
+                         alert("保存失败，请检查该系统名称是否已经存在 ！");  
+                	 }
+                 }  ,
+ 				error:function(){
+					alert("请求失败！");
+			　　　}
+             });
+
+        }
+    });
+    $("#btn-submit-sequence").click(function () {//非submit按钮点击后进行验证，如果是submit则无需此句直接验证
+        $("#form-sequence").bootstrapValidator('validate');//提交验证
+        if ($("#form-sequence").data('bootstrapValidator').isValid()) {//获取验证结果，如果成功，执行下面代码
+          	 var params = $("#form-sequence").serialize();
+              $.ajax( {  
+                 type : "POST",  
+                 url : "/saveSingleMonitor",  
+                 data : params,  
+                 success : function(msg) {
+                	 if(msg){
+                         alert("保存成功 ！");
+                         window.location.href="/"; 
+                	 }else{
+                         alert("保存失败 ！");  
+                	 }
+                 },
+ 				error:function(){
+					alert("请求失败！");
+			　　　}
+             }); 
+
+        }
+    });
+
+	var vgroup = [[${form.group}]];	
+	var vhttpMethod = [[${form.httpMethod}+'']];
+	var vfrequency = [[${form.frequency}+'']];
+	var vconditionType = [[${form.conditionType}+'']];
+    loadGroup(vgroup);
+    $(":radio[name='httpMethod'][value='" + vhttpMethod + "']").prop("checked", "checked");
+    $(":radio[name='frequency'][value='" + vfrequency + "']").prop("checked", "checked");
+    $("select[name='conditionType'] option[value='"+vconditionType+"']").attr("selected", "selected");
+});
+
+function formGroupValidator(){
+    $("#form-group").bootstrapValidator({
+        live: 'enabled',//验证时机，enabled是内容有变化就验证（默认），disabled和submitted是提交再验证
+        feedbackIcons: {//根据验证结果显示的各种图标
+            valid: 'glyphicon glyphicon-ok',
+            invalid: 'glyphicon glyphicon-remove',
+            validating: 'glyphicon glyphicon-refresh'
+        },
+        fields: {
+        	systemName: {
+                validators: {
+                    notEmpty: {//检测非空,radio也可用
+                        message: '系统名称不能为空'
+                    }
+                }
+            }
+        }
+    });
+}
+function loadGroup(selected){
+    $.ajax({
+        url : "/getGroups" , //获取数据列 
+        type : 'GET',
+        data : {},
+        success : function(data) {
+        	var html = "";
+        	$.each(data,function(n,value) {
+        		if(value.name == selected){
+        			html += '<option selected = "selected" value="'+ value.name  +'">' + value.name + '</option>';
+        		}else{
+        			html += '<option value="'+ value.name +'">' + value.name + '</option>';
+        		}
+        	});  
+        	$("select[name='group']").empty();
+        	$("select[name='group']").append(html);
+        	 $("select[name='group']").trigger("change");
+             
+        }
+	}); 
+	
+}
+
+</script>
+    
+</head>
+<body>
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <h1 th:if="${form.guid} eq null">添加监控<small>API监控</small></h1>
+      <h1 th:if="${form.guid} ne null">配置监控<small>API监控</small></h1>
+      			    
+      <ol class="breadcrumb">
+        <li><a href="#"><i class="fa fa-dashboard"></i> 主页</a></li>
+        <li><a href="/monitorList">API监控</a></li>
+        <li th:if="${form.guid} eq null" class="active">添加监控</li>
+        <li th:if="${form.guid} ne null" class="active">配置监控</li>
+      </ol>
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+	  <div class="row">
+        <div class="col-xs-12">  
+          <div class="box box-primary">
+            <div class="box-header with-border">
+              <h3 class="box-title">单API</h3>
+            </div>
+            <!-- /.box-header -->
+            <!-- form start --> 
+            <form class="form-horizontal" id="form-sequence" th:object="${form}">
+              <input name="type" type="hidden" value="SINGLE" />
+              <input name="guid" type="hidden" th:value="*{guid}" />
+              <input name="pguid" type="hidden" th:value="*{pguid}" />
+              <div class="box-body">
+                <!-- select -->
+                <div class="form-group">
+                  <label for="group" class="col-sm-2 control-label">所属系统<span style="color:red;"> *</span></label>
+                  <div class="col-sm-8">
+					  <select class="form-control" name="group">
+					  </select>
+                  </div>
+                  <div class="col-sm-1">
+				  <button type="button" class="btn btn-default" data-toggle="modal" data-target="#modal-default1"><i class="fa fa-plus"></i></button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">监控名称<span style="color:red;"> *</span></label>
+
+                  <div class="col-sm-8">
+                    <input type="text" class="form-control" id="name" name="name" th:value="*{name}" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">API类型<span style="color:red;"> *</span></label>
+                  <div class="col-sm-8 radio">
+                    <label>
+                    <input type="radio" name="httpMethod" id="httpMethod1" value="GET" checked="checked" />GET 
+                    </label>
+                    <label>
+                    <input type="radio" name="httpMethod" id="httpMethod2" value="POST" />POST 
+                    </label>
+                    <label>
+                    <input type="radio" name="httpMethod" id="httpMethod3" value="HEAD" />HEAD
+                    </label>
+                    <label>
+                    <input type="radio" name="httpMethod" id="httpMethod4" value="PUT" />PUT
+                    </label>
+                    <label>
+                    <input type="radio" name="httpMethod" id="httpMethod5" value="DELETE" />DELETE
+                    </label>
+                  </div>
+                </div>
+				
+                <div class="form-group">
+                  <label  class="col-sm-2 control-label">API地址<span style="color:red;"> *</span></label>
+                  <div class="col-sm-8">
+                    <input type="text" class="form-control" name="url" th:value="*{url}"/>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">监控频率<span style="color:red;"> *</span></label>
+                  <div class="col-sm-8 radio">
+                    <label>
+                    <input type="radio" name="frequency" id="frequency1" value="THIRTY" checked="checked" />30秒 
+                    </label>
+                    <label>
+                    <input type="radio" name="frequency" id="frequency2" value="SIXTY" />1分钟 
+                    </label>
+                    <label>
+                    <input type="radio" name="frequency" id="frequency3" value="FIVE_MINUTES" />5分钟
+                    </label>
+                    <label>
+                    <input type="radio" name="frequency" id="frequency4" value="TEN_MINUTES" />10分钟
+                    </label>
+                    <label>
+                    <input type="radio" name="frequency" id="frequency5" value="THIRTY_MINUTES" />30分钟
+                    </label>
+                    <label>
+                    <input type="radio" name="frequency" id="frequency6" value="ONE_HOUR" />1小时
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">请求头部</label>
+                  <div class="col-sm-8">
+                  <textarea name="headers" class="form-control" rows="3" placeholder="头部key::头部value&#10;头部key::头部value"  th:text="*{headers}"></textarea>
+				  </div>
+                </div>
+				
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">请求参数</label>
+                  <div class="col-sm-8">
+                  <textarea name="parameters" class="form-control" rows="3" placeholder="参数key::参数value&#10;参数key::参数value"  th:text="*{parameters}"></textarea>
+				  </div>
+                </div>
+				
+<!--                 <div class="form-group">
+                  <label for="maxConnectionSeconds" class="col-sm-2 control-label">最大超时时间</label>
+                  <div class="col-sm-8">
+                    <input type="text" class="form-control" name="maxConnectionSeconds" />
+                  </div>
+                </div> -->
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">结果校验</label>
+				  <div class="col-sm-2">
+					  <select class="form-control" name="conditionType">
+					    <option value="DEFAULT"></option>
+						<option value="STATUSCODE">响应码</option>
+						<option value="CONTAINS">内容包含</option>
+						<option value="DOESNT_CONTAIN">内容不包含</option>
+					  </select>
+                  </div>
+                  <div class="col-sm-6">
+                    <input type="text" class="form-control" name="condition"  th:value="*{condition}"/>
+                  </div>
+                </div>
+				
+<!--                 <div class="form-group">
+                  <label class="col-sm-2 control-label">结果提取</label>
+				  <div class="col-sm-8 radio">
+                    <label>
+                      <input type="radio" name="resultType" id="resultType1" value="XML" />xPath 
+                    </label>
+                    <label>
+                    <input type="radio" name="resultType" id="resultType2" value="JSON" />jsonPath 
+                    </label>
+                  </div>
+                </div>
+				
+                <div class="form-group">
+                  <div class="col-sm-offset-2 col-sm-8">
+                  <textarea name="variables" class="form-control" rows="3" placeholder="$$变量名::xPath路径&#10;$$变量名::xPath路径"></textarea>
+				  </div>
+                </div> -->
+				
+                <!-- textarea -->
+                <div class="form-group">
+                  <label class="col-sm-2 control-label">通知邮件地址</label>
+                  <div class="col-sm-8">
+                  <textarea name="remark" class="form-control" rows="3" th:text="*{remark}"></textarea>
+				  </div>
+                </div>
+
+
+              </div>
+              <!-- /.box-body -->
+              <div class="box-footer">
+                <a class="btn btn-default" href="/monitorList">返回</a>
+                <button id="btn-submit-sequence" class="btn btn-info pull-right">提交</button>
+              </div>
+              <!-- /.box-footer -->
+            </form>
+          </div>
+	    </div>
+      </div>
+      
+	  <div class="modal fade" id="modal-default1">
+		  <div class="modal-dialog">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+				  <span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title">添加系统</h4>
+			  </div>
+			  <div class="modal-body">
+			    <form class="form-horizontal" id="form-group">
+				  <div class="box-body">
+					<div class="form-group">
+					  <label for="systemName" class="col-sm-2 control-label">系统名称<span style="color:red;"> *</span></label>
+					  <div class="col-sm-9">
+						<input type="text" class="form-control" name="systemName" id="systemName" />
+					  </div>
+					</div>
+					
+				  </div>
+				</form>
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-default pull-left" data-dismiss="modal">关闭</button>
+				<button type="button" class="btn btn-primary" id="btn-submit-group">保存</button>
+			  </div>
+			</div>
+			<!-- /.modal-content -->
+		  </div>
+		  <!-- /.modal-dialog -->
+	  </div>
+	  <!-- /.modal -->
+    </section>
+  </div>
+  <!-- /.content-wrapper -->
+
+</body>
+</html>
